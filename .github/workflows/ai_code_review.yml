@@ -107,24 +107,6 @@ jobs:
 
         echo "Debug: Diff content length: ${#DIFF_CONTENT}"
 
-        # echo "Debug: Preparing API call using jq..."
-        # DIFF_ESCAPED=$(echo "$DIFF_CONTENT" | jq -Rs .)
-                
-        # PAYLOAD="{
-        #   \"model\": \"gpt-4o-mini\",
-        #   \"messages\": [
-        #     {
-        #       \"role\": \"system\",
-        #       \"content\": \"You are an expert unit test writer. Based on the provided code changes, suggest detailed Python unit tests using the unittest framework.\"
-        #     },
-        #     {
-        #       \"role\": \"user\",
-        #       \"content\": \"Please generate unit tests for these code changes:\\n\\n${DIFF_ESCAPED}\"
-        #     }
-        #   ],
-        #   \"temperature\": 0.7
-        # }"
-
         echo "Debug: Preparing API call using jq..."
         # Use jq to construct the JSON payload; this automatically escapes special characters.
         PAYLOAD=$(jq -n --arg diff "$DIFF_CONTENT" '{
@@ -178,3 +160,4 @@ jobs:
           });
       env:
         REVIEW_CONTENT: ${{ steps.ai_review.outputs.review_content }}
+        UNIT_TEST_CONTENT: ${{ steps.ai_unit_tests.outputs.unit_test_content }}
