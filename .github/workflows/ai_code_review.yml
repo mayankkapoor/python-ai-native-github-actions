@@ -50,8 +50,8 @@ jobs:
         echo "Debug: Diff content length: ${#DIFF_CONTENT}"
         
         echo "Debug: Preparing API call..."
-        DIFF_ESCAPED=$(echo "$DIFF_CONTENT" | jq -sR .)
-        
+        DIFF_ESCAPED=$(echo "$DIFF_CONTENT" | sed 's/\$\{\{/\$\\\{\\\{/g' | jq -sR .)
+                
         PAYLOAD="{
           \"model\": \"gpt-4o-mini\",
           \"messages\": [
