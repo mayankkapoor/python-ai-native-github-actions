@@ -35,16 +35,6 @@ jobs:
     - name: Extract Git Diff
       id: get_diff
       run: |
-        git diff HEAD^ HEAD > pr_diff.txt
-        echo "diff<<EOF" >> $GITHUB_OUTPUT
-        cat pr_diff.txt >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-
-    - name: Generate Code Review
-      id: ai_review
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
         echo "Debug: Fetching all branches..."
         # Fetch the main branch to compare
         git fetch origin main
@@ -54,6 +44,27 @@ jobs:
         DIFF_CONTENT=$(git diff origin/main)
 
         echo "Debug: Diff content length: ${#DIFF_CONTENT}"
+
+        # git diff HEAD^ HEAD > pr_diff.txt
+        echo "diff<<EOF" >> $GITHUB_OUTPUT
+        echo "$DIFF_CONTENT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Generate Code Review
+      id: ai_review
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        DIFF_CONTENT: ${{ steps.get_diff.outputs.diff }}
+      run: |
+        # echo "Debug: Fetching all branches..."
+        # # Fetch the main branch to compare
+        # git fetch origin main
+
+        # echo "Debug: Calculating diff between PR branch and main branch..."
+        # # Compute the diff between the PR branch and the main branch
+        # DIFF_CONTENT=$(git diff origin/main)
+
+        # echo "Debug: Diff content length: ${#DIFF_CONTENT}"
         
         echo "Debug: Preparing API call using jq..."
         # Use jq to construct the JSON payload; this automatically escapes special characters.
@@ -96,16 +107,17 @@ jobs:
       id: ai_unit_tests
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        DIFF_CONTENT: ${{ steps.get_diff.outputs.diff }}
       run: |
-        echo "Debug: Fetching all branches..."
-        # Fetch the main branch to compare
-        git fetch origin main
+        # echo "Debug: Fetching all branches..."
+        # # Fetch the main branch to compare
+        # git fetch origin main
 
-        echo "Debug: Calculating diff between PR branch and main branch..."
-        # Compute the diff between the PR branch and the main branch
-        DIFF_CONTENT=$(git diff origin/main)
+        # echo "Debug: Calculating diff between PR branch and main branch..."
+        # # Compute the diff between the PR branch and the main branch
+        # DIFF_CONTENT=$(git diff origin/main)
 
-        echo "Debug: Diff content length: ${#DIFF_CONTENT}"
+        # echo "Debug: Diff content length: ${#DIFF_CONTENT}"
 
         echo "Debug: Preparing API call using jq..."
         # Use jq to construct the JSON payload; this automatically escapes special characters.
