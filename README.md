@@ -3,6 +3,8 @@
 
 This repository contains a Python sample application that leverages AI native GitHub actions to enhance code quality, security, and production readiness. The codebase is designed to demonstrate how AI can be integrated into the software development workflow to provide valuable insights and suggestions.
 
+See sample PR with AI code review and unit tests here: https://github.com/mayankkapoor/python-ai-native-github-actions/pull/7
+
 ## Key Features
 ---------------
 
