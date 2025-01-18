@@ -50,23 +50,24 @@ jobs:
         echo "Debug: Diff content length: ${#DIFF_CONTENT}"
         
         echo "Debug: Preparing API call..."
+        DIFF_ESCAPED=$(echo "$DIFF_CONTENT" | jq -sR .)
         RESPONSE=$(curl -v https://api.openai.com/v1/chat/completions \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $OPENAI_API_KEY" \
-          -d '{
-            "model": "gpt-4o-mini",
-            "messages": [
+          -d "{
+            \"model\": \"gpt-4o-mini\",
+            \"messages\": [
               {
-                "role": "system",
-                "content": "You are an expert code reviewer. Analyze the code changes and provide detailed feedback on code quality, potential issues, and suggestions for improvement."
+                \"role\": \"system\",
+                \"content\": \"You are an expert code reviewer. Analyze the code changes and provide detailed feedback on code quality, potential issues, and suggestions for improvement.\"
               },
               {
-                "role": "user",
-                "content": "Please review these code changes:\n\n'"${DIFF_CONTENT}"'"
+                \"role\": \"user\",
+                \"content\": \"Please review these code changes:\\n\\n${DIFF_ESCAPED}\"
               }
             ],
-            "temperature": 0.7
-          }')
+            \"temperature\": 0.7
+          }")
         
         echo "Debug: Raw API Response:"
         echo "$RESPONSE"
