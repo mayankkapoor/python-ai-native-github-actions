@@ -92,12 +92,65 @@ jobs:
         echo "$CONTENT" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
+    - name: Generate Unit Test Suggestions
+      id: ai_unit_tests
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        echo "Debug: Fetching all branches..."
+        # Fetch the main branch to compare
+        git fetch origin main
+
+        echo "Debug: Calculating diff between PR branch and main branch..."
+        # Compute the diff between the PR branch and the main branch
+        DIFF_CONTENT=$(git diff origin/main)
+
+        echo "Debug: Diff content length: ${#DIFF_CONTENT}"
+
+        echo "Debug: Preparing API call using jq..."
+        # Use jq to construct the JSON payload; this automatically escapes special characters.
+        PAYLOAD=$(jq -n --arg diff "$DIFF_CONTENT" '{
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert unit test writer. Based on the provided code changes, suggest detailed Python unit tests using the unittest framework."
+            },
+            {
+              role: "user",
+              content: ("Please generate unit tests for these code changes:\n\n" + $diff)
+            }
+          ],
+          temperature: 0.7
+        }')    
+        
+        echo "Debug: Raw API Payload:"
+        echo "$PAYLOAD"
+        
+        echo "Debug: Making API call..."
+        RESPONSE=$(curl -v https://api.openai.com/v1/chat/completions \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $OPENAI_API_KEY" \
+          -d "$PAYLOAD")
+        
+        echo "Debug: Raw API Response:"
+        echo "$RESPONSE"
+        
+        echo "Debug: Extracted content:"
+        CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
+        echo "$CONTENT"
+        
+        echo "unit_test_content<<EOF" >> $GITHUB_OUTPUT
+        echo "$CONTENT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
     - name: Post Review Comment
       uses: actions/github-script@v6
       with:
         script: |
-          const reviewContent = process.env.REVIEW_CONTENT;
-          const comment = `## AI Code Review Feedback\n\n${reviewContent}`;
+          const codeReviewContent = process.env.REVIEW_CONTENT;
+          const unitTestsContent = process.env.UNIT_TEST_CONTENT;
+          const comment = `## AI Code Review Feedback\n\n### Code Review\n\n${codeReviewContent}\n\n### Unit Test Suggestions\n\n${unitTestsContent}`;
           
           await github.rest.issues.createComment({
             owner: context.repo.owner,
@@ -107,3 +160,4 @@ jobs:
           });
       env:
         REVIEW_CONTENT: ${{ steps.ai_review.outputs.review_content }}
+        UNIT_TEST_CONTENT: ${{ steps.ai_unit_tests.outputs.unit_test_content }}
