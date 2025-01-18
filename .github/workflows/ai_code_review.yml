@@ -45,12 +45,16 @@ jobs:
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
+        echo "Debug: Reading diff content..."
         DIFF_CONTENT=$(cat pr_diff.txt)
-        RESPONSE=$(curl https://api.openai.com/v1/chat/completions \
+        echo "Debug: Diff content length: ${#DIFF_CONTENT}"
+        
+        echo "Debug: Preparing API call..."
+        RESPONSE=$(curl -v https://api.openai.com/v1/chat/completions \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $OPENAI_API_KEY" \
           -d '{
-            "model": "gpt-4",
+            "model": "gpt-4o-mini",
             "messages": [
               {
                 "role": "system",
@@ -64,8 +68,15 @@ jobs:
             "temperature": 0.7
           }')
         
+        echo "Debug: Raw API Response:"
+        echo "$RESPONSE"
+        
+        echo "Debug: Extracted content:"
+        CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
+        echo "$CONTENT"
+        
         echo "review_content<<EOF" >> $GITHUB_OUTPUT
-        echo "$RESPONSE" | jq -r '.choices[0].message.content' >> $GITHUB_OUTPUT
+        echo "$CONTENT" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Post Review Comment
