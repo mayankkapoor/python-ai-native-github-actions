@@ -49,23 +49,22 @@ jobs:
         DIFF_CONTENT=$(cat pr_diff.txt)
         echo "Debug: Diff content length: ${#DIFF_CONTENT}"
         
-        echo "Debug: Preparing API call..."
-        DIFF_ESCAPED=$(echo "$DIFF_CONTENT" | jq -Rs .)
-                
-        PAYLOAD="{
-          \"model\": \"gpt-4o-mini\",
-          \"messages\": [
+        echo "Debug: Preparing API call using jq..."
+        # Use jq to construct the JSON payload; this automatically escapes special characters.
+        PAYLOAD=$(jq -n --arg diff "$DIFF_CONTENT" '{
+          model: "gpt-4o-mini",
+          messages: [
             {
-              \"role\": \"system\",
-              \"content\": \"You are an expert code reviewer. Analyze the code changes and provide detailed feedback on code quality, potential issues, and suggestions for improvement.\"
+              role: "system",
+              content: "You are an expert code reviewer. Analyze the code changes and provide detailed feedback on code quality, potential issues, and suggestions for improvement."
             },
             {
-              \"role\": \"user\",
-              \"content\": \"Please review these code changes:\\n\\n${DIFF_ESCAPED}\"
+              role: "user",
+              content: ("Please review these code changes:\n\n" + $diff)
             }
           ],
-          \"temperature\": 0.7
-        }"
+          temperature: 0.7
+        }')    
         
         echo "Debug: Raw API Payload:"
         echo "$PAYLOAD"
