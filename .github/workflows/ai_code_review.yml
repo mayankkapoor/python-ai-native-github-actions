@@ -21,7 +21,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.12'
 
     - name: Install Dependencies
       run: |
@@ -35,16 +35,6 @@ jobs:
     - name: Extract Git Diff
       id: get_diff
       run: |
-        git diff HEAD^ HEAD > pr_diff.txt
-        echo "diff<<EOF" >> $GITHUB_OUTPUT
-        cat pr_diff.txt >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-
-    - name: Generate Code Review
-      id: ai_review
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
         echo "Debug: Fetching all branches..."
         # Fetch the main branch to compare
         git fetch origin main
@@ -54,7 +44,18 @@ jobs:
         DIFF_CONTENT=$(git diff origin/main)
 
         echo "Debug: Diff content length: ${#DIFF_CONTENT}"
-        
+
+        # git diff HEAD^ HEAD > pr_diff.txt
+        echo "diff<<EOF" >> $GITHUB_OUTPUT
+        echo "$DIFF_CONTENT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Generate Code Review
+      id: ai_review
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        DIFF_CONTENT: ${{ steps.get_diff.outputs.diff }}
+      run: |        
         echo "Debug: Preparing API call using jq..."
         # Use jq to construct the JSON payload; this automatically escapes special characters.
         PAYLOAD=$(jq -n --arg diff "$DIFF_CONTENT" '{
@@ -62,7 +63,7 @@ jobs:
           messages: [
             {
               role: "system",
-              content: "You are an expert code reviewer & unit test writer. Analyze the code changes and provide detailed feedback on code quality, potential issues, and suggestions for improvement."
+              content: "You are an expert software engineer & site reliability engineer that puts code into production. Analyze the code changes and provide suggestions to improve code quality, security, production readiness."
             },
             {
               role: "user",
@@ -96,17 +97,8 @@ jobs:
       id: ai_unit_tests
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        DIFF_CONTENT: ${{ steps.get_diff.outputs.diff }}
       run: |
-        echo "Debug: Fetching all branches..."
-        # Fetch the main branch to compare
-        git fetch origin main
-
-        echo "Debug: Calculating diff between PR branch and main branch..."
-        # Compute the diff between the PR branch and the main branch
-        DIFF_CONTENT=$(git diff origin/main)
-
-        echo "Debug: Diff content length: ${#DIFF_CONTENT}"
-
         echo "Debug: Preparing API call using jq..."
         # Use jq to construct the JSON payload; this automatically escapes special characters.
         PAYLOAD=$(jq -n --arg diff "$DIFF_CONTENT" '{
@@ -118,7 +110,7 @@ jobs:
             },
             {
               role: "user",
-              content: ("Please generate unit tests for these code changes:\n\n" + $diff)
+              content: ("Please generate unit tests for these code changes if python code is being changed:\n\n" + $diff)
             }
           ],
           temperature: 0.7
