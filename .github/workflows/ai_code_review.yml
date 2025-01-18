@@ -97,27 +97,50 @@ jobs:
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
-        echo "Debug: Reading diff content..."
-        DIFF_CONTENT=$(cat pr_diff.txt)
+        echo "Debug: Fetching all branches..."
+        # Fetch the main branch to compare
+        git fetch origin main
+
+        echo "Debug: Calculating diff between PR branch and main branch..."
+        # Compute the diff between the PR branch and the main branch
+        DIFF_CONTENT=$(git diff origin/main)
+
         echo "Debug: Diff content length: ${#DIFF_CONTENT}"
-        
-        echo "Debug: Preparing API call using jq..."
-        DIFF_ESCAPED=$(echo "$DIFF_CONTENT" | jq -Rs .)
+
+        # echo "Debug: Preparing API call using jq..."
+        # DIFF_ESCAPED=$(echo "$DIFF_CONTENT" | jq -Rs .)
                 
-        PAYLOAD="{
-          \"model\": \"gpt-4o-mini\",
-          \"messages\": [
+        # PAYLOAD="{
+        #   \"model\": \"gpt-4o-mini\",
+        #   \"messages\": [
+        #     {
+        #       \"role\": \"system\",
+        #       \"content\": \"You are an expert unit test writer. Based on the provided code changes, suggest detailed Python unit tests using the unittest framework.\"
+        #     },
+        #     {
+        #       \"role\": \"user\",
+        #       \"content\": \"Please generate unit tests for these code changes:\\n\\n${DIFF_ESCAPED}\"
+        #     }
+        #   ],
+        #   \"temperature\": 0.7
+        # }"
+
+        echo "Debug: Preparing API call using jq..."
+        # Use jq to construct the JSON payload; this automatically escapes special characters.
+        PAYLOAD=$(jq -n --arg diff "$DIFF_CONTENT" '{
+          model: "gpt-4o-mini",
+          messages: [
             {
-              \"role\": \"system\",
-              \"content\": \"You are an expert unit test writer. Based on the provided code changes, suggest detailed Python unit tests using the unittest framework.\"
+              role: "system",
+              content: "You are an expert unit test writer. Based on the provided code changes, suggest detailed Python unit tests using the unittest framework."
             },
             {
-              \"role\": \"user\",
-              \"content\": \"Please generate unit tests for these code changes:\\n\\n${DIFF_ESCAPED}\"
+              role: "user",
+              content: ("Please generate unit tests for these code changes:\n\n" + $diff)
             }
           ],
-          \"temperature\": 0.7
-        }"
+          temperature: 0.7
+        }')    
         
         echo "Debug: Raw API Payload:"
         echo "$PAYLOAD"
