@@ -32,5 +32,32 @@ def factors(number):
         "count": len(factors_list)
     })
 
+@app.route("/prime-factors/<int:number>")
+def prime_factors(number):
+    """Find the prime factorization of a given number."""
+    if number <= 0:
+        return jsonify({"error": "Please provide a positive number"}), 400
+    
+    n = number
+    factors = []
+    divisor = 2
+    
+    while n > 1:
+        while n % divisor == 0:
+            factors.append(divisor)
+            n //= divisor
+        divisor += 1
+        if divisor * divisor > n:
+            if n > 1:
+                factors.append(n)
+            break
+    
+    return jsonify({
+        "number": number,
+        "prime_factors": factors,
+        "factorization": " × ".join(map(str, factors))
+    })
+
+
 if __name__ == "__main__":
     app.run(debug=True)
