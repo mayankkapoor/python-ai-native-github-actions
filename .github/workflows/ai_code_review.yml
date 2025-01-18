@@ -67,9 +67,10 @@ jobs:
           \"temperature\": 0.7
         }"
         
-        echo "Debug: API Payload:"
-        echo "$PAYLOAD" | jq '.'
+        echo "Debug: Raw API Payload:"
+        echo "$PAYLOAD"
         
+        echo "Debug: Making API call..."
         RESPONSE=$(curl -v https://api.openai.com/v1/chat/completions \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $OPENAI_API_KEY" \
