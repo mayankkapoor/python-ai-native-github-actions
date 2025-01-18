@@ -45,8 +45,14 @@ jobs:
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
-        echo "Debug: Reading diff content..."
-        DIFF_CONTENT=$(cat pr_diff.txt)
+        echo "Debug: Fetching all branches..."
+        # Fetch the main branch to compare
+        git fetch origin main
+
+        echo "Debug: Calculating diff between PR branch and main branch..."
+        # Compute the diff between the PR branch and the main branch
+        DIFF_CONTENT=$(git diff origin/main)
+
         echo "Debug: Diff content length: ${#DIFF_CONTENT}"
         
         echo "Debug: Preparing API call using jq..."
@@ -56,7 +62,7 @@ jobs:
           messages: [
             {
               role: "system",
-              content: "You are an expert code reviewer. Analyze the code changes and provide detailed feedback on code quality, potential issues, and suggestions for improvement."
+              content: "You are an expert code reviewer & unit test writer. Analyze the code changes and provide detailed feedback on code quality, potential issues, and suggestions for improvement."
             },
             {
               role: "user",
