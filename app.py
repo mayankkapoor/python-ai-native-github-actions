@@ -32,5 +32,24 @@ def factors(number):
         "count": len(factors_list)
     })
 
+@app.route("/isprime/<int:number>")
+def is_prime(number):
+    """Check if a given number is prime."""
+    if number <= 1:
+        return jsonify({"error": "Please provide a number greater than 1"}), 400
+    
+    for i in range(2, int(number ** 0.5) + 1):
+        if number % i == 0:
+            return jsonify({
+                "number": number,
+                "is_prime": False,
+                "first_divisor": i
+            })
+    
+    return jsonify({
+        "number": number,
+        "is_prime": True
+    })
+
 if __name__ == "__main__":
     app.run(debug=True)
