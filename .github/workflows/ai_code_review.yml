@@ -2,7 +2,7 @@ name: AI Code Review and Test Suggestions
 
 on:
   # Previous automatic trigger:
-  # on: pull_request:
+  # pull_request:
   #   types: [opened, synchronize]
   #   branches: [ main ]
   workflow_dispatch:
